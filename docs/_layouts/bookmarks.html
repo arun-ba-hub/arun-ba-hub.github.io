@@ -1,0 +1,190 @@
+---
+layout: base
+---
+
+<style type="text/css">
+
+    :root
+    {
+        --default-bookmark-icon: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABJUlEQVR42mKgOogpKJBMTM08kJCS+RXAJ1UbVBRDUWQIRmACWmwEpHxuN8GpkRIdAOuRfehwnQDXe7696C+eJkdvoox+ceEd/7DWFZyUcinO6JNBf3FOP/z+HGXirkX0hzXs8YJbG78ZvHp2dtaP/3E+Owqwcv1aJLDGSl8Ap6kY7JDmcjfK6UklaDvR4iBfy/Zq+19cyCETqF7AdAiilF6RGbYV0hFWOm9dbyYBiu0QIBcK85XLm090guoDGI3AUPiOM3HJrtbhKs8XBvh7k4mO+DkNMWC0CL6saS5D1Q0IERcRrBKdVy729Ti0apaojlEFHvI1k+Q03t6HESOeMUbjILUJCpo0bK8C7DxI9ezFMtibDuiLQY8oDJn/h5yUKctM1AYAkF4mBkXjJukAAAAASUVORK5CYII=');
+        --default-bookmark-folder: url('data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzQyODVGNCI+PHBhdGggZD0iTTIwIDZoLThsLTItMkg0Yy0xLjEgMC0xLjk5LjktMS45OSAyTDIgMThjMCAxLjEuOSAyIDIgMmgxNmMxLjEgMCAyLS45IDItMlY4YzAtMS4xLS45LTItMi0yem0wIDEySDRWOGgxNnYxMHoiLz48L3N2Zz4=');
+    }
+
+    .bookmark-tab-container
+    {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .tabs
+    {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .tab
+    {
+        cursor: pointer;
+        text-align: left;
+        border-inline-start: 0.5rem solid transparent;
+        border-inline-end: 0.5rem solid transparent;
+        border-block-start: 0.25rem solid transparent;
+        border-block-end: 0.25rem solid transparent;
+        border-radius: 4px;
+        padding-inline-start: 1.5rem;
+        padding-inline-end: 0.25rem;
+        padding-block-start: 0.1rem;
+        padding-block-end: 0.1rem;
+        background-image: var(--default-bookmark-folder);
+        background-repeat: no-repeat;
+        background-position-x: left;
+        background-position-y: center;
+        background-size: 1.3rem 1.3rem;
+    }
+
+        .tab.active
+        {
+            font-weight: 600;
+        }
+
+        .tab:hover
+        {
+            font-style: oblique;
+        }
+
+    .tab-content
+    {
+        display: none;
+    }
+
+        .tab-content.active
+        {
+            display: block;
+        }
+
+        .tab-content a
+        {
+            padding-left: 24px;
+            background-image: var(--default-bookmark-icon);
+            background-repeat: no-repeat;
+            background-position-x: left;
+            background-position-y: center;
+            background-size: 16px 16px;
+        }
+</style>
+
+<div>
+    <div class="bookmark-tab-container">
+        <div class="tabs">
+        </div>
+    </div>
+    {{ content }}
+</div>
+
+<script type="text/javascript">
+
+    function tab_OnClick(e)
+    {
+        let tabs = document.getElementsByClassName("tab");
+        let contents = document.getElementsByClassName("tab-content");
+
+        for (var i = 0; i < tabs.length; i++)
+        {
+            tabs[i].classList.remove('active');
+        }
+        for (var i = 0; i < contents.length; i++)
+        {
+            contents[i].classList.remove('active');
+        }
+
+        e.target.classList.add('active');
+        document.getElementById(e.target.dataset.tab).classList.add('active');
+    }
+
+    function fetchBookmarksData()
+    {
+        let tab_container_Element = document.getElementsByClassName("bookmark-tab-container")[0];
+        let tabs_Element = document.getElementsByClassName("tabs")[0];
+
+        fetch(document.getElementsByTagName("template")[0].content.children[0].value)
+            .then(response => response.json())
+            .then(jsonResult =>
+            {
+                var arrayLength = jsonResult.length;
+                for (var i = 0; i < arrayLength; i++)
+                {
+                    if (jsonResult[i].nodeType == 1)
+                    {
+                        let div_tab_content = document.createElement("div");
+                        let tab_button = document.createElement("button");
+
+                        div_tab_content.id = "div_tab_content_" + i.toString();
+                        div_tab_content.className = "tab-content";
+
+                        tab_button.setAttribute("data-tab", div_tab_content.id);
+                        tab_button.className = "tab";
+                        tab_button.innerText = jsonResult[i].title;
+                        tab_button.onclick = tab_OnClick;
+
+                        tab_container_Element.appendChild(div_tab_content);
+                        tabs_Element.appendChild(tab_button);
+
+                        buildBookmarkFolder(div_tab_content, jsonResult[i].children);
+                    }
+                    else
+                    {
+                        //??
+                    }
+                }
+
+                tabBtns = document.getElementsByClassName("tab");
+                if (tabBtns.length > 0) { tabBtns[0].click(); }
+            })
+            .catch(err =>
+            {
+                console.error(err);
+            });
+
+    }
+
+    function buildBookmarkFolder(divTabContent, bookMarksArr)
+    {
+        let ul_content = document.createElement("ul");
+        divTabContent.appendChild(ul_content);
+
+        var arrLength = bookMarksArr.length;
+        for (var i = 0; i < arrLength; i++)
+        {
+            var li_item = document.createElement("li");
+            ul_content.appendChild(li_item);
+
+            if (bookMarksArr[i].nodeType == 1)
+            {
+                var h3_heading = document.createElement("h3");
+                h3_heading.innerHTML = bookMarksArr[i].title;
+                li_item.appendChild(h3_heading);
+                buildBookmarkFolder(li_item, bookMarksArr[i].children);
+            }
+            else
+            {
+                var anc = document.createElement("a");
+                li_item.appendChild(anc);
+                anc.innerHTML = bookMarksArr[i].title;
+                anc.href = bookMarksArr[i].url;
+
+                if (bookMarksArr[i].faviconUrl)
+                {
+                    anc.style.backgroundImage = "url('" + bookMarksArr[i].faviconUrl + "')";
+                }
+                else
+                {
+                    anc.style.backgroundImage = window.getComputedStyle(document.documentElement).getPropertyValue("--default-bookmark-icon");
+                }
+            }
+        }
+    }
+
+    fetchBookmarksData();
+
+</script>
